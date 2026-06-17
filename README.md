@@ -166,3 +166,223 @@ Since data is highly imbalanced, accuracy is useless. Use:
 • AUC-ROC: Area under ROC curve — overall ranking ability
 • Average Precision (AP): Better than AUC for highly imbalanced data
 • False Positive Rate: Important when false alarms have high cost (e.g. surgery alerts)
+
+
+Q14
+What are common statistical methods for anomaly detection?
+▾
+Algorithm
+• Z-Score method: Points beyond 3 standard deviations from mean are anomalies. Simple, fast, assumes Gaussian distribution.
+• IQR method: Points below Q1−1.5×IQR or above Q3+1.5×IQR. Robust to non-Gaussian data.
+• Grubbs test: Statistical test for single outlier in univariate data.
+• Mahalanobis distance: Multivariate distance accounting for feature correlations — generalizes Z-score to multiple dimensions.
+• Gaussian Mixture Models: Fit a mixture of Gaussians; low probability points are anomalies.
+
+💡 Interview tip: For interviews, start with IQR and Z-score — they're simple, explainable, and often sufficient baselines.
+Q15
+Explain the Z-Score and its use in anomaly detection.
+▾
+Algorithm
+Z-Score measures how many standard deviations a data point is from the mean:
+
+Z = (x − μ) / σ
+
+Where μ = mean, σ = standard deviation.
+
+In anomaly detection: if |Z| > 3, the point is an anomaly (falls outside 99.7% of the distribution under Gaussian assumption).
+
+Example: Transaction amount mean = ₹500, σ = ₹100. A transaction of ₹1200 has Z = (1200−500)/100 = 7.0 → clear anomaly.
+
+Limitation: Sensitive to outliers itself — one extreme value shifts mean and σ, potentially hiding other anomalies.
+
+💡 Interview tip: Always mention the limitation: Z-score is itself influenced by outliers, so IQR or robust statistics are preferred.
+Q16
+How does k-NN work for anomaly detection?
+▾
+Algorithm
+k-NN anomaly detection works on a simple intuition: normal points have similar neighbors; anomalies don't.
+
+Algorithm:
+1. For each data point, find its k nearest neighbors
+2. Compute the anomaly score = distance to kth nearest neighbor (or average distance to k neighbors)
+3. Points with high scores (far from their neighbors) are anomalies
+
+Threshold: Set a percentile cutoff (e.g., top 5% highest scores = anomaly).
+
+Pros: No assumptions about data distribution, works well in low dimensions.
+Cons: O(n²) computation, sensitive to k value, poor in high dimensions.
+
+💡 Interview tip: Explain why it fails in high dimensions (curse of dimensionality) — interviewers love when you know the limitations.
+Q17
+How can cluster analysis detect anomalies?
+▾
+Algorithm
+Clusters group similar data points. Anomalies either:
+1. Don't belong to any cluster (fall outside all clusters)
+2. Belong to very small, sparse clusters
+3. Are far from their assigned cluster center
+
+K-Means approach: Compute distance from each point to its cluster centroid. Points with distance above a threshold are anomalies.
+
+DBSCAN approach: Directly labels points as "core", "border", or "noise" — noise points are anomalies.
+
+Limitation of K-Means: You must predefine k and it assumes spherical clusters. DBSCAN is more robust for anomaly detection.
+
+Q18
+How does the Isolation Forest algorithm work?
+▾
+Algorithm
+Isolation Forest exploits a key insight: anomalies are few and different, so they're easier to isolate.
+
+Algorithm:
+1. Build random binary trees by randomly selecting a feature and a random split value
+2. Repeat to build a forest of such trees
+3. Anomaly score = average path length to isolate a point across all trees
+
+Anomalies require fewer splits to isolate (shorter path) because they're in sparse regions. Normal points need many splits (longer path).
+
+Formula: score = 2^(−avg_path_length / c(n)) where c(n) normalizes by expected path in a random BST.
+
+Pros: Fast (O(n log n)), handles high dimensions, no distance computation needed, works well on large datasets.
+
+💡 Interview tip: Isolation Forest is the most popular answer in data science interviews — memorize the core intuition: 'anomalies are easier to isolate.'
+Q19
+Explain LOF — Local Outlier Factor.
+▾
+Algorithm
+LOF measures local density deviation of a point relative to its neighbors. A point is anomalous if its local density is much lower than its neighbors'.
+
+Steps:
+1. Compute reachability distance between points
+2. Calculate Local Reachability Density (LRD) = inverse of average reachability distance
+3. LOF score = average ratio of neighbors' LRD to point's own LRD
+
+LOF score ≈ 1 → normal point. LOF >> 1 → anomaly (surrounded by much denser neighbors).
+
+Key advantage: LOF is local — it handles datasets where different regions have different densities, unlike global methods like Z-score.
+
+💡 Interview tip: LOF shines when you say 'it detects anomalies relative to their local neighborhood, not the global distribution.'
+Q20
+How does DBSCAN detect anomalies?
+▾
+Algorithm
+DBSCAN (Density-Based Spatial Clustering of Applications with Noise) classifies points as:
+• Core points: Has ≥ minPts neighbors within radius ε
+• Border points: Within ε of a core point but fewer than minPts neighbors
+• Noise points: Neither core nor border → these are anomalies
+
+DBSCAN directly outputs anomaly labels without requiring k clusters to be specified.
+
+Params to tune: ε (neighborhood radius) and minPts (minimum points). Use k-distance plot to select ε.
+
+Advantage: Finds arbitrary-shaped clusters and naturally identifies outliers without assumptions.
+
+Q21
+Explain One-Class SVM for anomaly detection.
+▾
+Algorithm
+One-Class SVM is a semi-supervised method trained only on normal data. It learns a decision boundary that encloses normal data in a high-dimensional feature space.
+
+Idea: Find the smallest hypersphere (or hyperplane from origin) that contains most normal training points. At inference, points outside this boundary = anomalies.
+
+Key parameter: ν (nu) — controls the fraction of training data allowed to be outside the boundary (= expected anomaly rate).
+
+Kernel trick: RBF kernel maps data to infinite-dimensional space, enabling non-linear boundaries.
+
+Pros: No anomaly labels needed. Cons: Slow on large datasets, sensitive to ν.
+
+💡 Interview tip: One-Class SVM = 'draw a tight fence around normal data, flag anything outside.'
+Q22
+How do autoencoders detect anomalies?
+▾
+Algorithm
+An autoencoder is a neural network that learns to compress data and reconstruct it:
+
+Input → Encoder → Bottleneck (latent space) → Decoder → Reconstructed output
+
+Training: Train only on normal data. The network learns a compressed representation of normalcy.
+
+Detection: At test time, compute reconstruction error = MSE(input, reconstruction). Normal data → low error. Anomalies → high error (the network can't reconstruct patterns it never learned).
+
+Threshold: Set a reconstruction error cutoff (e.g., 95th percentile of training error).
+
+Best for: Image anomaly detection, high-dimensional tabular data, time-series.
+
+💡 Interview tip: The key phrase: 'the autoencoder memorizes normalcy — it fails to reconstruct anomalies, revealing them through high reconstruction error.'
+Q23
+How does PCA help identify anomalies?
+▾
+Algorithm
+PCA reduces data to principal components capturing maximum variance.
+
+Anomaly detection approach:
+1. Fit PCA on normal training data
+2. For a new point: project it onto principal components, then reconstruct it back
+3. Compute reconstruction error = distance between original and reconstructed point
+4. High reconstruction error → anomaly (the point doesn't fit the normal subspace)
+
+Alternatively: anomalies often have large values in the minor (low-variance) components, which normal data rarely activates.
+
+Advantage: Computationally cheap, interpretable, handles correlated features well.
+
+Q24
+Gaussian Mixture Models: benefits and drawbacks for anomaly detection?
+▾
+Algorithm
+GMM fits a mixture of k Gaussian distributions to data. Points with very low probability density are anomalies.
+
+Benefits:
+• Models multi-modal distributions (data with multiple natural clusters)
+• Provides probabilistic scores — easy to threshold
+• Can capture correlations between features
+• Works well when data clusters are roughly Gaussian
+
+Drawbacks:
+• Must specify number of components k
+• Sensitive to initialization
+• Assumes Gaussian-shaped clusters — fails with irregular shapes
+• Computationally expensive in high dimensions
+• Can be fooled if anomalies cluster together
+
+Q25
+How does Support Vector Machine (SVM) adapt for anomaly detection?
+▾
+Algorithm
+Standard SVM is binary classification. For anomaly detection:
+
+One-Class SVM: Trained on normal data only. Learns a boundary in high-dimensional space beyond which points are anomalies (as covered in Q21).
+
+Two-Class SVM: If some labeled anomalies exist, train a binary SVM with normal vs anomaly. Use class weights to handle imbalance.
+
+SVDD (Support Vector Data Description): A variation that finds the minimum enclosing hypersphere around normal data. Anomalies fall outside this sphere.
+
+Q26
+How does Random Cut Forest detect anomalies?
+▾
+Algorithm
+Random Cut Forest (RCF) — developed by Amazon for AWS — is designed for streaming/real-time anomaly detection.
+
+Algorithm:
+1. Build a forest of random cut trees on streaming data windows
+2. For each new point, compute its Collusive Displacement — how much does adding/removing this point change the structure of the trees?
+3. High displacement = anomalous point
+
+Key advantage over Isolation Forest: RCF updates incrementally — it doesn't need to retrain on new data, making it ideal for real-time streaming scenarios.
+
+Used in Amazon Kinesis Data Analytics for real-time monitoring.
+
+💡 Interview tip: Mention RCF when asked about streaming or real-time anomaly detection — shows awareness of production systems.
+Q27
+Explain time-series anomaly detection and its unique challenges.
+▾
+Algorithm
+Time-series data has temporal ordering, meaning observations are correlated across time. This creates unique challenges:
+
+Unique challenges:
+• Seasonality: A value that's normal in July may be anomalous in January
+• Trend: Rising baselines mean old thresholds become invalid
+• Autocorrelation: Consecutive observations aren't independent
+• Concept drift: Normal behavior evolves over time
+• Lag effects: Anomalies may have delayed impact
+
+Methods: ARIMA residual analysis, STL decomposition + outlier detection on residuals, LSTM autoencoders, Prophet + anomaly scoring.
